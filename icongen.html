@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA & App Icon Generator | Fast & Offline</title>
+    
+    <meta name="description" content="Generate all app icons, favicons, and PWA assets from a single image instantly. iOS, Android, and Web formats. Offline & Privacy-first.">
+    <meta name="keywords" content="app icon generator, favicon generator, pwa assets, android icon resize, ios icon generator, offline image resizer">
+    <meta name="author" content="DevTools">
+    <meta name="theme-color" content="#0d1117">
+    
+    <link rel="canonical" href="https://walid50dev.github.io/icongen/">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
+
+    <style>
+        :root {
+            --bg: #0d1117;
+            --text: #c9d1d9;
+            --panel: #161b22;
+            --border: #30363d;
+            --primary: #a371f7; /* Purple for "Creative" tools */
+            --primary-hover: #8a57e3;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 { color: #fff; margin-bottom: 0.5rem; font-weight: 800; }
+        .tagline { color: #8b949e; font-size: 0.95rem; }
+
+        main {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--border);
+            background: var(--panel);
+            border-radius: 16px;
+            padding: 3rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .upload-box:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .icon-placeholder { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        
+        .preview-area {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .img-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            object-fit: cover;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 2px solid var(--border);
+        }
+
+        .generate-btn {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 5px 15px rgba(163, 113, 247, 0.3);
+        }
+
+        .generate-btn:hover { background: var(--primary-hover); transform: scale(1.05); }
+        .generate-btn:disabled { opacity: 0.7; cursor: wait; }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .feature-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .feature-card strong { color: #fff; display: block; margin-bottom: 5px; }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem;
+            color: #8b949e;
+            font-size: 0.8rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            width: 100%;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Ko-fi Button */
+        .donate-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #29abe0;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📱 App Icon Generator</h1>
+        <p class="tagline">Generate Favicons, Android & iOS icons in 1 click. Privacy First.</p>
+    </header>
+
+    <main>
+        <!-- Upload -->
+        <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
+            <span class="icon-placeholder">📤</span>
+            <h3 style="color:#fff;">Click to Upload Logo</h3>
+            <p style="color:#8b949e; margin-top:8px;">Recommended: 1024x1024 (PNG)</p>
+            <input type="file" id="fileInput" accept="image/png, image/jpeg" style="display:none">
+        </div>
+
+        <!-- Preview & Action -->
+        <div class="preview-area" id="previewArea">
+            <img id="previewImg" class="img-preview" src="" alt="Preview">
+            <p style="color:#8b949e;">Logo ready! Click below to generate all assets.</p>
+            <button class="generate-btn" onclick="generateIcons()">⚡ Generate & Download ZIP</button>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <strong>🍎 iOS Assets</strong>
+                Includes 180x180, 120x120, and App Store 1024x1024.
+            </div>
+            <div class="feature-card">
+                <strong>🤖 Android Assets</strong>
+                Includes 192x192, 512x512, and Play Store icons.
+            </div>
+            <div class="feature-card">
+                <strong>🌐 Web / PWA</strong>
+                Standard Favicon.ico (32x32) and manifest icons.
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>100% Client-Side. Your logo is processed securely in your browser.</p>
+    </footer>
+
+    <!-- KO-FI LINK -->
+    <a href="https://ko-fi.com/walid50dev" target="_blank" class="donate-fab">
+        <span>☕</span> Support on Ko-fi
+    </a>
+
+    <script>
+        const uploadBox = document.getElementById('uploadBox');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const previewImg = document.getElementById('previewImg');
+        
+        let sourceImage = new Image();
+
+        // 1. Handle Upload
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                const url = URL.createObjectURL(file);
+                sourceImage.src = url;
+                sourceImage.onload = () => {
+                    previewImg.src = url;
+                    uploadBox.style.display = 'none';
+                    previewArea.style.display = 'flex';
+                }
+            }
+        });
+
+        // 2. Icon Sizes Configuration
+        const sizes = [
+            // Web / PWA
+            { w: 16, h: 16, name: 'favicon-16x16.png' },
+            { w: 32, h: 32, name: 'favicon-32x32.png' },
+            { w: 192, h: 192, name: 'android-chrome-192x192.png' },
+            { w: 512, h: 512, name: 'android-chrome-512x512.png' },
+            // iOS
+            { w: 180, h: 180, name: 'apple-touch-icon.png' },
+            { w: 120, h: 120, name: 'apple-icon-120x120.png' },
+            { w: 152, h: 152, name: 'apple-icon-152x152.png' },
+            { w: 167, h: 167, name: 'apple-icon-167x167.png' },
+            // Stores
+            { w: 1024, h: 1024, name: 'app-store-icon.png' },
+            { w: 512, h: 512, name: 'play-store-icon.png' }
+        ];
+
+        // 3. Generate Function
+        async function generateIcons() {
+            const btn = document.querySelector('.generate-btn');
+            btn.textContent = "Processing...";
+            btn.disabled = true;
+
+            const zip = new JSZip();
+
+            // Create Canvas for resizing
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Loop through all sizes
+            for (let size of sizes) {
+                canvas.width = size.w;
+                canvas.height = size.h;
+                
+                // Clear and Draw
+                ctx.clearRect(0, 0, size.w, size.h);
+                // Simple high-quality scaling
+                ctx.drawImage(sourceImage, 0, 0, size.w, size.h);
+
+                // Convert to Blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                zip.file(size.name, blob);
+            }
+
+            // Generate ZIP
+            const content = await zip.generateAsync({ type: "blob" });
+            saveAs(content, "app-icons.zip");
+
+            // Reset UI
+            btn.textContent = "⚡ Generate & Download ZIP";
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
